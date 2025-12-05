@@ -1,0 +1,31 @@
+# --- Terraform State and Local Data (CRITICAL) ---
+
+# Ignore the Terraform state file, backups, and lock files
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+
+# Ignore the local provider cache and modules directory
+.terraform/
+.terraform.lock.hcl
+
+
+# --- Generated Artifacts and Temporary Files ---
+
+# Ignore the ZIP file shown in your structure
+*.zip
+
+# Ignore common log files
+*.log
+
+# --- IDE and OS Files (VS Code is visible in your image) ---
+
+# VS Code directory (local workspace settings)
+.vscode/
+
+# macOS temp files
+.DS_Store
+
+# Editor swap/backup files
+*~
+*.swp

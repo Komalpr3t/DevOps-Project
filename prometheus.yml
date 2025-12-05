@@ -1,0 +1,65 @@
+---
+- name: Install Prometheus and Node Exporter
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    # 1. Install Prometheus (The Server)
+    - name: Install Prometheus
+      ansible.builtin.apt:
+        name: prometheus
+        state: present
+
+    # 2. Install Node Exporter (The Metrics Collector)
+    - name: Install Node Exporter
+      ansible.builtin.apt:
+        name: prometheus-node-exporter
+        state: present
+
+    # 3. Configure Prometheus to scrape Node Exporter
+    # We write a basic config file that tells Prometheus to look at localhost:9100
+    - name: Configure Prometheus to scrape Node Exporter
+      ansible.builtin.copy:
+        dest: /etc/prometheus/prometheus.yml
+        content: |
+          global:
+            scrape_interval: 15s
+
+          scrape_configs:
+            - job_name: 'prometheus'
+              scrape_interval: 5s
+              static_configs:
+                - targets: ['localhost:9090']
+
+            - job_name: 'node_exporter'
+              scrape_interval: 5s
+              static_configs:
+                - targets: ['localhost:9100']
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart Prometheus
+
+    # 4. Ensure services are running and enabled
+    - name: Start and enable Node Exporter
+      ansible.builtin.service:
+        name: prometheus-node-exporter
+        state: started
+        enabled: yes
+
+    - name: Start and enable Prometheus
+      ansible.builtin.service:
+        name: prometheus
+        state: started
+        enabled: yes
+
+  handlers:
+    # This runs only if the config file changes
+    - name: Restart Prometheus
+      ansible.builtin.service:
+        name: prometheus
+        state: restarted
