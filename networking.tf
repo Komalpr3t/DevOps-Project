@@ -10,14 +10,14 @@ terraform {
     }
   }
 
-  backend "s3" {
-    bucket         = "devops-automation-project-komal-tfstate"   # ✅ YOUR bucket
-    key            = "terraform.tfstate"                         # can stay same
-    region         = "us-east-1"
-    dynamodb_table = "devops-automation-project-lock-table-komal" # ✅ YOUR lock table
-    encrypt        = true
-    # use_lockfile = true   # ❌ remove this, it's not for S3 backend
-  }
+  # backend "s3" {
+  #   bucket         = "devops-automation-project-komal-tfstate"   # ✅ YOUR bucket
+  #   key            = "terraform.tfstate"                         # can stay same
+  #   region         = "us-east-1"
+  #   dynamodb_table = "devops-automation-project-lock-table-komal" # ✅ YOUR lock table
+  #   encrypt        = true
+  #   use_lockfile = true   
+  # }
 }
 
 
