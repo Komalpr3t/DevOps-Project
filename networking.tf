@@ -1,23 +1,25 @@
-terraform {
+tterraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 6.0"
     }
     random = {
-    source = "hashicorp/random"
-    version = "~> 3.0"    
+      source  = "hashicorp/random"
+      version = "~> 3.0"
     }
-  } 
+  }
 
   backend "s3" {
-    bucket         = "devops-automation-project-11122334-utkarsh"
-    key            = "terraform.tfstate"
+    bucket         = "devops-automation-project-komal-tfstate"   # ✅ YOUR bucket
+    key            = "terraform.tfstate"                         # can stay same
     region         = "us-east-1"
-    use_lockfile   = true
+    dynamodb_table = "devops-automation-project-lock-table-komal" # ✅ YOUR lock table
     encrypt        = true
+    # use_lockfile = true   # ❌ remove this, it's not for S3 backend
   }
 }
+
 
 provider "aws" {
   region = "us-east-1"
