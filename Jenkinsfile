@@ -3,20 +3,13 @@ pipeline {
 
     environment {
         TF_IN_AUTOMATION = 'true'
-        TF_CLI_CONFIG_FILE = credentials('DevOps')
-        
     }
 
     stages {
         stage('Init') {
             steps {
-                sh 'ls'
-                sh 'terraform init -no-color'
-            }
-        }
-        stage('Plan') {
-            steps {
-                sh 'terraform plan -no-color'
+                bat 'dir'
+                bat 'terraform init -no-color'
             }
         }
     }
