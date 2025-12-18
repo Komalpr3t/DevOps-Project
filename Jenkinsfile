@@ -2,9 +2,10 @@ pipeline {
     agent any
 
     environment {
-        TF_IN_AUTOMATION = 'true'
+        TF_IN_AUTOMATION   = 'true'
         AWS_DEFAULT_REGION = 'us-east-1'
-        // Make sure terraform, aws, ansible are in PATH on Windows
+
+        // Windows PATH (cmd.exe friendly)
         PATH = "C:\\Program Files\\Amazon\\AWSCLIV2;C:\\Terraform;C:\\Python312;${env.PATH}"
     }
 
@@ -18,8 +19,10 @@ pipeline {
 
         stage('Terraform Init') {
             steps {
-                bat 'terraform init -no-color'
-                bat 'type %BRANCH_NAME%.tfvars'
+                bat '''
+                terraform init -no-color
+                type %BRANCH_NAME%.tfvars
+                '''
             }
         }
 
@@ -29,7 +32,7 @@ pipeline {
             }
         }
 
-        /* ====== APPLY VALIDATION ====== */
+        /* ===== APPLY VALIDATION ===== */
         stage('Validate Apply') {
             input {
                 message "Do you want to apply this Terraform plan?"
@@ -43,6 +46,7 @@ pipeline {
         stage('Terraform Apply') {
             steps {
                 script {
+
                     bat 'terraform apply -auto-approve -var-file=%BRANCH_NAME%.tfvars'
 
                     env.INSTANCE_IP = bat(
@@ -71,14 +75,14 @@ pipeline {
                 echo "Waiting for instance ${env.INSTANCE_ID} to pass AWS health checks..."
                 bat '''
                 aws ec2 wait instance-status-ok ^
-                --instance-ids %INSTANCE_ID% ^
-                --region us-east-1
+                  --instance-ids %INSTANCE_ID% ^
+                  --region %AWS_DEFAULT_REGION%
                 '''
                 echo "Instance is healthy. Proceeding to Ansible."
             }
         }
 
-        /* ====== ANSIBLE VALIDATION ====== */
+        /* ===== ANSIBLE VALIDATION ===== */
         stage('Validate Ansible') {
             input {
                 message "Do you want to run Ansible?"
@@ -100,7 +104,7 @@ pipeline {
             }
         }
 
-        /* ====== DESTROY VALIDATION ====== */
+        /* ===== DESTROY VALIDATION ===== */
         stage('Validate Destroy') {
             input {
                 message "Do you want to destroy the infrastructure?"
@@ -120,7 +124,7 @@ pipeline {
 
     post {
         always {
-            bat 'del /f /q dynamic_inventory.ini 2>nul'
+            bat 'if exist dynamic_inventory.ini del /f /q dynamic_inventory.ini'
         }
         success {
             echo "✅ Pipeline completed successfully!"

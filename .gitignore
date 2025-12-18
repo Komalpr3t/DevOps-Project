@@ -29,3 +29,4 @@
 # Editor swap/backup files
 *~
 *.swp
+*.pem
