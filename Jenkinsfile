@@ -5,7 +5,7 @@ pipeline {
         TF_IN_AUTOMATION   = 'true'
         TF_CLI_ARGS        = '-no-color'
         AWS_DEFAULT_REGION = 'us-east-1'
-        BRANCH_NAME        = 'main'
+        
 
         PATH = "C:\\Program Files\\Amazon\\AWSCLIV2;C:\\Terraform;C:\\Python312;${env.PATH}"
     }
