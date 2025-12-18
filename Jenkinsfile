@@ -1,14 +1,17 @@
 pipeline {
     agent any
-   environment {
-    TF_IN_AUTOMATION = 'true'
-    TF_CLI_ARGS = '-no-color'
-    AWS_DEFAULT_REGION = 'us-east-1'
-    PATH = "/usr/local/bin:/opt/homebrew/bin:/Users/vyshu/Library/Python/3.12/bin:${env.PATH}"
-    // CHANGE THIS: Replace 'main' with your actual .tfvars filename (e.g., 'dev' or 'prod')
-    BRANCH_NAME = "main" 
-}
+
+    environment {
+        TF_IN_AUTOMATION   = 'true'
+        TF_CLI_ARGS        = '-no-color'
+        AWS_DEFAULT_REGION = 'us-east-1'
+        BRANCH_NAME        = 'main'
+
+        PATH = "C:\\Program Files\\Amazon\\AWSCLIV2;C:\\Terraform;C:\\Python312;${env.PATH}"
+    }
+
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -17,15 +20,16 @@ pipeline {
 
         stage('Terraform Init') {
             steps {
-                sh 'terraform init -no-color'
-                // Use double quotes to allow variable interpolation
-                sh "cat ${env.BRANCH_NAME}.tfvars"
+                bat '''
+                terraform init -no-color
+                type %BRANCH_NAME%.tfvars
+                '''
             }
         }
 
         stage('Terraform Plan') {
             steps {
-                sh "terraform plan -var-file=${env.BRANCH_NAME}.tfvars"
+                bat 'terraform plan -var-file=%BRANCH_NAME%.tfvars'
             }
         }
 
@@ -34,38 +38,38 @@ pipeline {
                 message "Do you want to apply this Terraform plan?"
                 ok "Apply"
             }
-            steps {
-                echo 'Terraform Apply Approved'
-            }
         }
 
         stage('Terraform Apply') {
             steps {
                 script {
-                    // FIX: Changed to double quotes so $BRANCH_NAME works
-                    sh "terraform apply -auto-approve -var-file=${env.BRANCH_NAME}.tfvars"
+                    bat 'terraform apply -auto-approve -var-file=%BRANCH_NAME%.tfvars'
 
-                    env.INSTANCE_IP = sh(
+                    env.INSTANCE_IP = bat(
                         script: 'terraform output -raw instance_public_ip',
                         returnStdout: true
                     ).trim()
 
-                    env.INSTANCE_ID = sh(
+                    env.INSTANCE_ID = bat(
                         script: 'terraform output -raw instance_id',
                         returnStdout: true
                     ).trim()
 
-                    sh """
-                    echo "[web]" > dynamic_inventory.ini
-                    echo "${env.INSTANCE_IP}" >> dynamic_inventory.ini
-                    """
+                    bat '''
+                    echo [web] > dynamic_inventory.ini
+                    echo %INSTANCE_IP% >> dynamic_inventory.ini
+                    '''
                 }
             }
         }
 
         stage('Wait for AWS Instance Health') {
             steps {
-                sh "aws ec2 wait instance-status-ok --instance-ids ${env.INSTANCE_ID} --region us-east-1"
+                bat '''
+                aws ec2 wait instance-status-ok ^
+                  --instance-ids %INSTANCE_ID% ^
+                  --region %AWS_DEFAULT_REGION%
+                '''
             }
         }
 
@@ -74,14 +78,14 @@ pipeline {
                 message "Do you want to run Ansible?"
                 ok "Run Ansible"
             }
-            steps {
-                echo 'Ansible Approved'
-            }
         }
 
         stage('Ansible Configuration') {
             steps {
-                sh 'ansible-playbook install-monitoring.yml -i dynamic_inventory.ini'
+                bat '''
+                ansible-playbook --version
+                ansible-playbook install-monitoring.yml -i dynamic_inventory.ini
+                '''
             }
         }
 
@@ -90,25 +94,24 @@ pipeline {
                 message "Do you want to destroy the infrastructure?"
                 ok "Destroy"
             }
-            steps {
-                echo 'Destroy Approved'
-            }
         }
 
         stage('Terraform Destroy') {
             steps {
-                sh "terraform destroy -auto-approve -var-file=${env.BRANCH_NAME}.tfvars"
+                bat 'terraform destroy -auto-approve -var-file=%BRANCH_NAME%.tfvars'
             }
         }
     }
 
     post {
         always {
-            sh 'rm -f dynamic_inventory.ini'
+            bat 'if exist dynamic_inventory.ini del /f /q dynamic_inventory.ini'
         }
         failure {
-            // FIX: Ensure this also uses double quotes
-            sh "terraform destroy -auto-approve -var-file=${env.BRANCH_NAME}.tfvars || echo 'Cleanup failed or not necessary.'"
+            bat 'terraform destroy -auto-approve -var-file=%BRANCH_NAME%.tfvars || echo Cleanup failed'
+        }
+        success {
+            echo '✅ Pipeline completed successfully!'
         }
     }
 }
