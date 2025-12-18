@@ -34,9 +34,11 @@ pipeline {
         }
 
         stage('Validate Apply') {
-            input {
-                message "Do you want to apply this Terraform plan?"
-                ok "Apply"
+            steps {
+                input {
+                    message "Do you want to apply this Terraform plan?"
+                    ok "Apply"
+                }
             }
         }
 
@@ -74,9 +76,11 @@ pipeline {
         }
 
         stage('Validate Ansible') {
-            input {
-                message "Do you want to run Ansible?"
-                ok "Run Ansible"
+            steps {
+                input {
+                    message "Do you want to run Ansible?"
+                    ok "Run Ansible"
+                }
             }
         }
 
@@ -90,9 +94,11 @@ pipeline {
         }
 
         stage('Validate Destroy') {
-            input {
-                message "Do you want to destroy the infrastructure?"
-                ok "Destroy"
+            steps {
+                input {
+                    message "Do you want to destroy the infrastructure?"
+                    ok "Destroy"
+                }
             }
         }
 
