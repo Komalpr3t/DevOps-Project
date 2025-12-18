@@ -3,9 +3,10 @@ pipeline {
 
     environment {
         TF_IN_AUTOMATION   = 'true'
+        TF_CLI_ARGS        = '-no-color'
         AWS_DEFAULT_REGION = 'us-east-1'
+        BRANCH_NAME        = 'main'
 
-        // Windows PATH (cmd.exe friendly)
         PATH = "C:\\Program Files\\Amazon\\AWSCLIV2;C:\\Terraform;C:\\Python312;${env.PATH}"
     }
 
@@ -32,21 +33,16 @@ pipeline {
             }
         }
 
-        /* ===== APPLY VALIDATION ===== */
         stage('Validate Apply') {
             input {
                 message "Do you want to apply this Terraform plan?"
                 ok "Apply"
-            }
-            steps {
-                echo 'Terraform Apply Approved'
             }
         }
 
         stage('Terraform Apply') {
             steps {
                 script {
-
                     bat 'terraform apply -auto-approve -var-file=%BRANCH_NAME%.tfvars'
 
                     env.INSTANCE_IP = bat(
@@ -59,9 +55,6 @@ pipeline {
                         returnStdout: true
                     ).trim()
 
-                    echo "Provisioned Instance IP: ${env.INSTANCE_IP}"
-                    echo "Provisioned Instance ID: ${env.INSTANCE_ID}"
-
                     bat '''
                     echo [web] > dynamic_inventory.ini
                     echo %INSTANCE_IP% >> dynamic_inventory.ini
@@ -72,46 +65,34 @@ pipeline {
 
         stage('Wait for AWS Instance Health') {
             steps {
-                echo "Waiting for instance ${env.INSTANCE_ID} to pass AWS health checks..."
                 bat '''
                 aws ec2 wait instance-status-ok ^
                   --instance-ids %INSTANCE_ID% ^
                   --region %AWS_DEFAULT_REGION%
                 '''
-                echo "Instance is healthy. Proceeding to Ansible."
             }
         }
 
-        /* ===== ANSIBLE VALIDATION ===== */
         stage('Validate Ansible') {
             input {
                 message "Do you want to run Ansible?"
                 ok "Run Ansible"
-            }
-            steps {
-                echo 'Ansible Approved'
             }
         }
 
         stage('Ansible Configuration') {
             steps {
                 bat '''
-                where ansible-playbook
                 ansible-playbook --version
-
                 ansible-playbook install-monitoring.yml -i dynamic_inventory.ini
                 '''
             }
         }
 
-        /* ===== DESTROY VALIDATION ===== */
         stage('Validate Destroy') {
             input {
                 message "Do you want to destroy the infrastructure?"
                 ok "Destroy"
-            }
-            steps {
-                echo 'Destroy Approved'
             }
         }
 
@@ -126,13 +107,11 @@ pipeline {
         always {
             bat 'if exist dynamic_inventory.ini del /f /q dynamic_inventory.ini'
         }
-        success {
-            echo "✅ Pipeline completed successfully!"
-        }
         failure {
-            bat '''
-            terraform destroy -auto-approve -var-file=%BRANCH_NAME%.tfvars || echo Cleanup failed or not required
-            '''
+            bat 'terraform destroy -auto-approve -var-file=%BRANCH_NAME%.tfvars || echo Cleanup failed'
+        }
+        success {
+            echo '✅ Pipeline completed successfully!'
         }
     }
 }
