@@ -76,6 +76,10 @@ pipeline {
         }
 
         stage('Validate Ansible') {
+            when {
+                beforeInput true
+                branch 'dev'
+            }
             steps {
                 input {
                     message "Do you want to run Ansible?"
@@ -86,10 +90,16 @@ pipeline {
 
         stage('Ansible Configuration') {
             steps {
-                bat '''
-                ansible-playbook --version
-                ansible-playbook install-monitoring.yml -i dynamic_inventory.ini
-                '''
+                ansiblePlaybook(
+                    playbook: 'grafana.yml',
+                    inventory: 'dynamic_inventory.ini',
+                    credentialsId: SSH_CREDENTIALS_ID,
+                )
+                ansiblePlaybook(
+                    playbook: 'test-grafana.yml',
+                    inventory: 'dynamic_inventory.ini',
+                    credentialsId: SSH_CREDENTIALS_ID,
+                )
             }
         }
 
@@ -118,6 +128,9 @@ pipeline {
         }
         success {
             echo '✅ Pipeline completed successfully!'
+        }
+        aborted {
+            bat 'terraform destroy -auto-approve -var-file=%BRANCH_NAME%.tfvars || echo Cleanup failed'
         }
     }
 }
