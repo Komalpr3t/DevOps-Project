@@ -31,11 +31,11 @@ pipeline {
             }
         }
 
-        /* ===== MANUAL APPROVAL ===== */
+        /* ===== APPLY APPROVAL ===== */
         stage('Validate Apply') {
-            input {
-                message "Do you want to apply this Terraform plan?"
-                ok "Apply"
+            steps {
+                input message: "Do you want to apply this Terraform plan?",
+                      ok: "Apply"
             }
         }
 
@@ -72,14 +72,14 @@ pipeline {
             }
         }
 
+        /* ===== ANSIBLE APPROVAL (DEV ONLY) ===== */
         stage('Validate Ansible') {
             when {
-                beforeInput true
                 branch 'dev'
             }
-            input {
-                message "Do you want to run Ansible?"
-                ok "Run Ansible"
+            steps {
+                input message: "Do you want to run Ansible?",
+                      ok: "Run Ansible"
             }
         }
 
@@ -98,10 +98,11 @@ pipeline {
             }
         }
 
+        /* ===== DESTROY APPROVAL ===== */
         stage('Validate Destroy') {
-            input {
-                message "Do you want to destroy the infrastructure?"
-                ok "Destroy"
+            steps {
+                input message: "Do you want to destroy the infrastructure?",
+                      ok: "Destroy"
             }
         }
 
