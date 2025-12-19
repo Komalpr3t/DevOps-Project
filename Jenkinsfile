@@ -5,8 +5,6 @@ pipeline {
         TF_IN_AUTOMATION   = 'true'
         TF_CLI_ARGS        = '-no-color'
         AWS_DEFAULT_REGION = 'us-east-1'
-        
-
         PATH = "C:\\Program Files\\Amazon\\AWSCLIV2;C:\\Terraform;C:\\Python312;${env.PATH}"
     }
 
@@ -33,12 +31,11 @@ pipeline {
             }
         }
 
+        /* ===== MANUAL APPROVAL ===== */
         stage('Validate Apply') {
-            steps {
-                input {
-                    message "Do you want to apply this Terraform plan?"
-                    ok "Apply"
-                }
+            input {
+                message "Do you want to apply this Terraform plan?"
+                ok "Apply"
             }
         }
 
@@ -80,11 +77,9 @@ pipeline {
                 beforeInput true
                 branch 'dev'
             }
-            steps {
-                input {
-                    message "Do you want to run Ansible?"
-                    ok "Run Ansible"
-                }
+            input {
+                message "Do you want to run Ansible?"
+                ok "Run Ansible"
             }
         }
 
@@ -93,22 +88,20 @@ pipeline {
                 ansiblePlaybook(
                     playbook: 'grafana.yml',
                     inventory: 'dynamic_inventory.ini',
-                    credentialsId: SSH_CREDENTIALS_ID,
+                    credentialsId: 'SSH_CREDENTIALS_ID'
                 )
                 ansiblePlaybook(
                     playbook: 'test-grafana.yml',
                     inventory: 'dynamic_inventory.ini',
-                    credentialsId: SSH_CREDENTIALS_ID,
+                    credentialsId: 'SSH_CREDENTIALS_ID'
                 )
             }
         }
 
         stage('Validate Destroy') {
-            steps {
-                input {
-                    message "Do you want to destroy the infrastructure?"
-                    ok "Destroy"
-                }
+            input {
+                message "Do you want to destroy the infrastructure?"
+                ok "Destroy"
             }
         }
 
@@ -126,11 +119,11 @@ pipeline {
         failure {
             bat 'terraform destroy -auto-approve -var-file=%BRANCH_NAME%.tfvars || echo Cleanup failed'
         }
-        success {
-            echo '✅ Pipeline completed successfully!'
-        }
         aborted {
             bat 'terraform destroy -auto-approve -var-file=%BRANCH_NAME%.tfvars || echo Cleanup failed'
+        }
+        success {
+            echo '✅ Pipeline completed successfully!'
         }
     }
 }
